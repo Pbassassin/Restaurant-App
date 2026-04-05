@@ -16,13 +16,19 @@ WORKDIR /var/www/html
 
 COPY . .
 
-# Install PHP deps
+# Install PHP deps FIRST
 RUN composer install --no-dev --optimize-autoloader
 
-# Install frontend deps & build
+# NOW clear Laravel caches (correct place)
+RUN php artisan config:clear \
+ && php artisan cache:clear \
+ && php artisan route:clear \
+ && php artisan view:clear
+
+# Build frontend
 RUN npm install && npm run build
 
-# Fix Laravel storage
+# Fix storage
 RUN mkdir -p storage/framework/sessions \
     storage/framework/views \
     storage/framework/cache \
