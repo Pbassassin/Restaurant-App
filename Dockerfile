@@ -1,5 +1,6 @@
 FROM php:8.4-apache
 
+# Install system dependencies + Node
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     unzip \
@@ -12,23 +13,19 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Set working directory
 WORKDIR /var/www/html
 
+# Copy project files
 COPY . .
 
-# Install PHP deps FIRST
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# NOW clear Laravel caches (correct place)
-RUN php artisan config:clear \
- && php artisan cache:clear \
- && php artisan route:clear \
- && php artisan view:clear
-
-# Build frontend
+# Build frontend assets (Vite)
 RUN npm install && npm run build
 
-# Fix storage
+# Create required Laravel storage folders + permissions
 RUN mkdir -p storage/framework/sessions \
     storage/framework/views \
     storage/framework/cache \
@@ -36,11 +33,13 @@ RUN mkdir -p storage/framework/sessions \
  && chmod -R 775 storage bootstrap/cache \
  && chown -R www-data:www-data storage bootstrap/cache
 
-# Permissions
+# Set correct permissions
 RUN chown -R www-data:www-data /var/www/html
 
-# Apache config
+# Enable Apache rewrite
 RUN a2enmod rewrite
+
+# Set document root to /public
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 
