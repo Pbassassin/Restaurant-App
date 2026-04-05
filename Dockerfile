@@ -22,9 +22,6 @@ COPY . .
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Run migrations (VERY IMPORTANT)
-RUN php artisan migrate --force
-
 # Build frontend (Vite)
 RUN npm install && npm run build
 
@@ -47,3 +44,6 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 
 EXPOSE 80
+
+# 🔥 THIS IS THE IMPORTANT PART
+CMD sleep 10 && php artisan migrate --force && apache2-foreground
