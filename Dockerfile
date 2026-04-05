@@ -22,10 +22,13 @@ COPY . .
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Build frontend assets (Vite)
+# Run migrations (VERY IMPORTANT)
+RUN php artisan migrate --force
+
+# Build frontend (Vite)
 RUN npm install && npm run build
 
-# Create required Laravel storage folders + permissions
+# Create Laravel storage folders + permissions
 RUN mkdir -p storage/framework/sessions \
     storage/framework/views \
     storage/framework/cache \
@@ -33,13 +36,13 @@ RUN mkdir -p storage/framework/sessions \
  && chmod -R 775 storage bootstrap/cache \
  && chown -R www-data:www-data storage bootstrap/cache
 
-# Set correct permissions
+# Set permissions
 RUN chown -R www-data:www-data /var/www/html
 
 # Enable Apache rewrite
 RUN a2enmod rewrite
 
-# Set document root to /public
+# Set document root
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 
